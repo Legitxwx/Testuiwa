@@ -1,0 +1,64 @@
+local Toba = loadstring(game:HttpGet("https://raw.githubusercontent.com/Legitxwx/Testuiwa/refs/heads/main/Toba/Toba_Core"))()
+
+-- 1. Initialize Window with Key System
+local Window = Toba.new({
+    Name = "Toba Hub v5",
+    KeySystem = true,
+    Key = "TOBA-2026",
+    OnKeyVerified = function()
+        print("Success!")
+    end
+})
+
+-- 2. Create Tabs (Organized by Index)
+local MainTab = Window:CreateTab({Title = "General"})
+local CombatTab = Window:CreateTab({Title = "Combat"})
+local VisualsTab = Window:CreateTab({Title = "Visuals"})
+
+-- 3. General Tab Features
+MainTab:Section("Hub Information")
+
+MainTab:Paragraph({
+    Title = "Welcome",
+    Content = "Toba Hub is currently active. Press RightShift to hide."
+})
+
+MainTab:Section("Utility")
+
+MainTab:Toggle({
+    Title = "Enable Anti-AFK",
+    Callback = function(val)
+        print("Anti-AFK is now: ", val)
+    end
+})
+
+-- 4. Combat Tab Features
+CombatTab:Section("Main Combat")
+
+CombatTab:Slider({
+    Title = "Aimbot FOV",
+    Min = 10,
+    Max = 800,
+    Default = 100,
+    Callback = function(val)
+        print("FOV Changed: ", val)
+    end
+})
+
+CombatTab:Toggle({
+    Title = "Silent Aim",
+    Callback = function(val)
+        print("Silent Aim: ", val)
+    end
+})
+
+-- 5. Visuals Tab Features
+VisualsTab:Section("Player Visuals")
+
+VisualsTab:Toggle({
+    Title = "Enable ESP Boxes",
+    Callback = function(val)
+        print("ESP: ", val)
+    end
+})
+

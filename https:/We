@@ -1,24 +1,94 @@
 local Toba = loadstring(game:HttpGet("https://raw.githubusercontent.com/Legitxwx/Testuiwa/refs/heads/main/Wawawewa"))()
-local Window = Toba:CreateWindow({
-    Name = "Toba Hub",
-    ThemeColor = Color3.fromRGB(255, 85, 85) -- Red Theme
+
+-- [[ 1. INITIALIZE WINDOW ]]
+local Window = Toba.new({
+    Name = "Toba Hub v5",
+    KeySystem = true,
+    Key = "TOBA-FREE-2026",
+    KeyLink = "https://toba-keys.center",
+    OnKeyVerified = function()
+        print("Verified!")
+    end
 })
 
-local MainTab = Window:CreateTab("Main")
-local PlayerTab = Window:CreateTab("Player")
+-- [[ 2. CREATE TABS (Vertical Sidebar) ]]
+local MainTab = Window:CreateTab({Title = "Home", Icon = "Home"})
+local SettingsTab = Window:CreateTab({Title = "Settings", Icon = "Settings"})
 
--- Add Button
-MainTab:CreateButton("Print Hello", function()
-    print("Hello from Toba UI!")
-end)
+-- [[ 3. MAIN TAB ELEMENTS ]]
+MainTab:Section("Information")
 
--- Add Toggle
-MainTab:CreateToggle("Auto Farm", function(state)
-    print("Auto Farm is now:", state)
-end)
+MainTab:Paragraph({
+    Title = "Script Status",
+    Content = "The script is currently Undetected and running v5.0.2"
+})
 
--- Add Slider
-PlayerTab:CreateSlider("WalkSpeed", 16, 100, function(value)
-    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
-end)
+MainTab:Divider()
 
+MainTab:Section("Main Features")
+
+MainTab:Toggle({
+    Title = "Auto Farm",
+    Callback = function(state)
+        print("Auto Farm set to:", state)
+    end
+})
+
+MainTab:Slider({
+    Title = "WalkSpeed",
+    Min = 16, 
+    Max = 500,
+    Default = 16,
+    Callback = function(v)
+        print("Speed changed to:", v)
+    end
+})
+
+MainTab:Dropdown({
+    Title = "Select Mode",
+    Options = {"Legit", "Rage", "Blatant"},
+    Callback = function(selected)
+        print("Mode selected:", selected)
+    end
+})
+
+-- [[ 4. SETTINGS & THEMES ]]
+SettingsTab:Section("UI Customization")
+
+SettingsTab:Dropdown({
+    Title = "UI Theme",
+    Icon = "Palette",
+    Options = {"Ruby Red", "Electric Blue", "Emerald", "Vampire", "Cyberpunk", "Midnight", "Ocean", "Gold"},
+    Callback = function(theme)
+        local Themes = {
+            ["Ruby Red"]      = Color3.fromRGB(255, 60, 60),
+            ["Electric Blue"] = Color3.fromRGB(0, 160, 255),
+            ["Emerald"]       = Color3.fromRGB(40, 255, 120),
+            ["Vampire"]       = Color3.fromRGB(150, 0, 0),
+            ["Cyberpunk"]     = Color3.fromRGB(255, 0, 255),
+            ["Midnight"]      = Color3.fromRGB(45, 45, 65),
+            ["Ocean"]         = Color3.fromRGB(0, 255, 255),
+            ["Gold"]          = Color3.fromRGB(255, 200, 50)
+        }
+        Window:UpdateTheme(Themes[theme])
+        Window:Notify({Title = "Theme Updated", Content = "Interface is now " .. theme})
+        print("Theme set to:", theme)
+    end
+})
+
+SettingsTab:Divider()
+
+SettingsTab:Section("Links")
+
+SettingsTab:Social({
+    Title = "Discord Server",
+    Link = "https://discord.gg/toba"
+})
+
+SettingsTab:Button({
+    Title = "Destroy UI",
+    Callback = function()
+        print("Closing UI...")
+        Window.Gui:Destroy()
+    end
+})

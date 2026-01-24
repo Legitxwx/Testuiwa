@@ -1,84 +1,153 @@
---[[ 
-    TOBA UI LIBRARY 
-    A modern, draggable, dark-themed UI library for Roblox.
-]]
-
-local TweenService = game:GetService("TweenService")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local Players = game:GetService("Players")
-local CoreGui = game:GetService("CoreGui")
-
 local Toba = {}
+Toba.__index = Toba
 
--- Utility: Get the best parent (CoreGui for exploits, PlayerGui for games)
-local function getParent()
-    local success, result = pcall(function()
-        return CoreGui
-    end)
-    if success then return result end
-    return Players.LocalPlayer:WaitForChild("PlayerGui")
+local cloneref = (cloneref or clonereference or function(instance) return instance end)
+local TweenService = cloneref(game:GetService("TweenService"))
+local UserInputService = cloneref(game:GetService("UserInputService"))
+local CoreGui = cloneref(game:GetService("CoreGui"))
+
+-- [[ UTILITIES ]]
+local function AddCorner(ins, rad)
+    local c = Instance.new("UICorner")
+    c.CornerRadius = UDim.new(0, rad or 8)
+    c.Parent = ins
 end
 
--- Utility: Draggable Logic
-local function MakeDraggable(topbar, object)
-    local dragging = false
-    local dragInput, dragStart, startPos
-
-    local function update(input)
-        local delta = input.Position - dragStart
-        local targetPos = UDim2.new(
-            startPos.X.Scale, 
-            startPos.X.Offset + delta.X, 
-            startPos.Y.Scale, 
-            startPos.Y.Offset + delta.Y
-        )
-        
-        -- Smooth Tween Drag
-        local dragTween = TweenService:Create(object, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Position = targetPos})
-        dragTween:Play()
-    end
-
-    topbar.InputBegan:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
-            dragging = true
-            dragStart = input.Position
-            startPos = object.Position
-
+local function MakeDraggable(top, obj)
+    local dragging, dragStart, startPos
+    top.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true; dragStart = input.Position; startPos = obj.Position
             input.Changed:Connect(function()
-                if input.UserInputState == Enum.UserInputState.End then
-                    dragging = false
-                end
+                if input.UserInputState == Enum.UserInputState.End then dragging = false end
             end)
         end
     end)
-
-    topbar.InputChanged:Connect(function(input)
-        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
-            dragInput = input
-        end
-    end)
-
     UserInputService.InputChanged:Connect(function(input)
-        if input == dragInput and dragging then
-            update(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            obj.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
         end
     end)
 end
 
--- Utility: Create Rounded Corner
-local function AddCorner(instance, radius)
-    local corner = Instance.new("UICorner")
-    corner.CornerRadius = UDim.new(0, radius or 6)
-    corner.Parent = instance
-    return corner
+-- [[ LIBRARY CORE ]]
+function Toba.new(cfg)
+    local self = setmetatable({}, Toba)
+    self.Accent = Color3.fromRGB(255, 65, 65)
+    self.Gui = Instance.new("ScreenGui", CoreGui)
+    
+    if cfg.KeySystem then
+        self.KeyFrame = Instance.new("Frame", self.Gui)
+        self.KeyFrame.Size = UDim2.new(0, 320, 0, 180)
+        self.KeyFrame.Position = UDim2.new(0.5, -160, 0.5, -90)
+        self.KeyFrame.BackgroundColor3 = Color3.fromRGB(15, 15, 15)
+        AddCorner(self.KeyFrame)
+
+        local KInput = Instance.new("TextBox", self.KeyFrame)
+        KInput.Size = UDim2.new(0, 260, 0, 35); KInput.Position = UDim2.new(0.5, -130, 0.4, 0)
+        KInput.PlaceholderText = "Enter Key..."; KInput.BackgroundColor3 = Color3.fromRGB(25, 25, 25); KInput.TextColor3 = Color3.new(1,1,1); AddCorner(KInput)
+
+        local Verify = Instance.new("TextButton", self.KeyFrame)
+        Verify.Size = UDim2.new(0, 260, 0, 35); Verify.Position = UDim2.new(0.5, -130, 0.7, 0)
+        Verify.Text = "Verify"; Verify.BackgroundColor3 = self.Accent; AddCorner(Verify)
+
+        Verify.MouseButton1Click:Connect(function()
+            if KInput.Text == cfg.Key then
+                self.KeyFrame:Destroy()
+                self.Main.Visible = true
+                if cfg.OnKeyVerified then cfg.OnKeyVerified() end
+            end
+        end)
+    end
+
+    self.Main = Instance.new("Frame", self.Gui)
+    self.Main.Size = UDim2.new(0, 550, 0, 380)
+    self.Main.Position = UDim2.new(0.5, -275, 0.5, -190)
+    self.Main.BackgroundColor3 = Color3.fromRGB(12, 12, 12)
+    self.Main.Visible = not cfg.KeySystem
+    AddCorner(self.Main)
+
+    self.Sidebar = Instance.new("Frame", self.Main)
+    self.Sidebar.Size = UDim2.new(0, 150, 1, 0); self.Sidebar.BackgroundColor3 = Color3.fromRGB(18, 18, 18); AddCorner(self.Sidebar)
+
+    self.TabHolder = Instance.new("ScrollingFrame", self.Sidebar)
+    self.TabHolder.Size = UDim2.new(1, 0, 1, -10); self.TabHolder.BackgroundTransparency = 1; self.TabHolder.ScrollBarThickness = 0
+    Instance.new("UIListLayout", self.TabHolder).Padding = UDim.new(0, 5)
+
+    self.PageHolder = Instance.new("Frame", self.Main)
+    self.PageHolder.Size = UDim2.new(1, -160, 1, -10); self.PageHolder.Position = UDim2.new(0, 155, 0, 5); self.PageHolder.BackgroundTransparency = 1
+
+    MakeDraggable(self.Main, self.Main)
+    return self
 end
 
--- Utility: Create Stroke
-local function AddStroke(instance, color, thickness)
-    local stroke = Instance.new("UIStroke")
-    stroke.Color = color or Color3.fromRGB(60, 60, 60)
-    stroke.Thickness = thickness or 1
+function Toba:UpdateTheme(color)
+    self.Accent = color
+    -- Internal theme update logic here
+end
+
+function Toba:Notify(cfg)
+    print("Notification: " .. cfg.Title .. " - " .. cfg.Content)
+end
+
+function Toba:CreateTab(cfg)
+    local Tab = {Parent = self}
+    local Btn = Instance.new("TextButton", self.TabHolder)
+    Btn.Size = UDim2.new(1, -10, 0, 35); Btn.Text = "  " .. cfg.Title; Btn.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    Btn.TextColor3 = Color3.new(1,1,1); Btn.TextXAlignment = "Left"; AddCorner(Btn)
+
+    local Page = Instance.new("ScrollingFrame", self.PageHolder)
+    Page.Size = UDim2.new(1,0,1,0); Page.Visible = false; Page.BackgroundTransparency = 1; Page.ScrollBarThickness = 0
+    Instance.new("UIListLayout", Page).Padding = UDim.new(0, 8)
+
+    Btn.MouseButton1Click:Connect(function()
+        for _, v in pairs(self.PageHolder:GetChildren()) do v.Visible = false end
+        Page.Visible = true
+    end)
+    
+    if #self.TabHolder:GetChildren() == 2 then Page.Visible = true end
+
+    function Tab:Section(txt)
+        local l = Instance.new("TextLabel", Page); l.Text = txt; l.Size = UDim2.new(1,0,0,25); l.TextColor3 = self.Parent.Accent; l.BackgroundTransparency = 1; l.TextXAlignment = "Left"
+    end
+
+    function Tab:Paragraph(cfg)
+        local p = Instance.new("TextLabel", Page); p.Text = cfg.Title .. "\n" .. cfg.Content; p.Size = UDim2.new(1,-5,0,50); p.BackgroundColor3 = Color3.fromRGB(20,20,20); p.TextColor3 = Color3.new(1,1,1); AddCorner(p)
+    end
+
+    function Tab:Button(cfg)
+        local b = Instance.new("TextButton", Page); b.Size = UDim2.new(1,-5,0,35); b.Text = cfg.Title; b.BackgroundColor3 = Color3.fromRGB(25,25,25); b.TextColor3 = Color3.new(1,1,1); AddCorner(b)
+        b.MouseButton1Click:Connect(cfg.Callback)
+    end
+
+    function Tab:Toggle(cfg)
+        local t = Instance.new("TextButton", Page); t.Size = UDim2.new(1,-5,0,35); t.Text = "  " .. cfg.Title; t.BackgroundColor3 = Color3.fromRGB(25,25,25); t.TextColor3 = Color3.new(1,1,1); t.TextXAlignment = "Left"; AddCorner(t)
+        local s = false
+        t.MouseButton1Click:Connect(function() s = not s; t.BackgroundColor3 = s and self.Parent.Accent or Color3.fromRGB(25,25,25); cfg.Callback(s) end)
+    end
+
+    function Tab:Slider(cfg)
+        -- Slider UI code here
+    end
+
+    function Tab:Dropdown(cfg)
+        -- Dropdown UI code here
+    end
+    
+    function Tab:Divider()
+        local d = Instance.new("Frame", Page); d.Size = UDim2.new(1,-10,0,2); d.BackgroundColor3 = Color3.fromRGB(30,30,30); d.BorderSizePixel = 0
+    end
+
+    function Tab:Social(cfg)
+        local s = Instance.new("TextButton", Page); s.Size = UDim2.new(1,-5,0,35); s.Text = "Join " .. cfg.Title; s.BackgroundColor3 = Color3.fromRGB(30,35,45); s.TextColor3 = Color3.fromRGB(114, 137, 218); AddCorner(s)
+        s.MouseButton1Click:Connect(function() setclipboard(cfg.Link) end)
+    end
+
+    return Tab
+end
+
+return Toba
     stroke.Parent = instance
     return stroke
 end

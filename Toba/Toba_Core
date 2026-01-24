@@ -1,0 +1,256 @@
+-- [[ TOBA UI LIBRARY - CORE MODULE ]] --
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+local Mouse = LocalPlayer:GetMouse()
+
+local Toba = {}
+Toba.__index = Toba
+
+-- UI Theme Configuration
+local Themes = {
+    Main = Color3.fromRGB(15, 12, 22),
+    Sidebar = Color3.fromRGB(20, 16, 28),
+    Accent = Color3.fromRGB(255, 105, 180),
+    Text = Color3.fromRGB(245, 245, 245),
+    SecondaryText = Color3.fromRGB(160, 150, 170),
+    Element = Color3.fromRGB(28, 24, 38)
+}
+
+-- Utility: Smooth Animations
+local function Tween(obj, info, goal)
+    local t = TweenService:Create(obj, TweenInfo.new(info, Enum.EasingStyle.Quart, Enum.EasingDirection.Out), goal)
+    t:Play()
+    return t
+end
+
+function Toba.new(cfg)
+    local self = setmetatable({}, Toba)
+    
+    self.Gui = Instance.new("ScreenGui", LocalPlayer.PlayerGui)
+    self.Gui.Name = "Toba_" .. cfg.Name
+    self.Gui.ResetOnSpawn = false
+    
+    self.Main = Instance.new("Frame", self.Gui)
+    self.Main.Size = UDim2.new(0, 550, 0, 400)
+    self.Main.Position = UDim2.new(0.5, -275, 0.5, -200)
+    self.Main.BackgroundColor3 = Themes.Main
+    self.Main.BorderSizePixel = 0
+    self.Main.Visible = not cfg.KeySystem
+    Instance.new("UICorner", self.Main).CornerRadius = UDim.new(0, 12)
+    
+    -- Sidebar (Index)
+    self.Sidebar = Instance.new("Frame", self.Main)
+    self.Sidebar.Size = UDim2.new(0, 160, 1, 0)
+    self.Sidebar.BackgroundColor3 = Themes.Sidebar
+    Instance.new("UICorner", self.Sidebar).CornerRadius = UDim.new(0, 12)
+    
+    local Logo = Instance.new("TextLabel", self.Sidebar)
+    Logo.Size = UDim2.new(1, 0, 0, 60)
+    Logo.Text = "TOBA"
+    Logo.Font = Enum.Font.GothamBold
+    Logo.TextColor3 = Themes.Accent
+    Logo.TextSize = 24
+    Logo.BackgroundTransparency = 1
+
+    self.TabList = Instance.new("ScrollingFrame", self.Sidebar)
+    self.TabList.Size = UDim2.new(1, 0, 1, -70)
+    self.TabList.Position = UDim2.new(0, 0, 0, 65)
+    self.TabList.BackgroundTransparency = 1
+    self.TabList.ScrollBarThickness = 0
+    local TabLayout = Instance.new("UIListLayout", self.TabList)
+    TabLayout.Padding = UDim.new(0, 5)
+    TabLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+    self.PageContainer = Instance.new("Frame", self.Main)
+    self.PageContainer.Size = UDim2.new(1, -180, 1, -20)
+    self.PageContainer.Position = UDim2.new(0, 170, 0, 10)
+    self.PageContainer.BackgroundTransparency = 1
+
+    if cfg.KeySystem then self:InitKeySystem(cfg) end
+
+    return self
+end
+
+-- [[ KEY SYSTEM COMPONENT ]]
+function Toba:InitKeySystem(cfg)
+    local KeyMain = Instance.new("Frame", self.Gui)
+    KeyMain.Size = UDim2.new(0, 350, 0, 220)
+    KeyMain.Position = UDim2.new(0.5, -175, 0.5, -110)
+    KeyMain.BackgroundColor3 = Themes.Main
+    Instance.new("UICorner", KeyMain)
+
+    local Close = Instance.new("TextButton", KeyMain)
+    Close.Size = UDim2.new(0, 35, 0, 35)
+    Close.Position = UDim2.new(1, -40, 0, 5)
+    Close.Text = "×"
+    Close.TextColor3 = Themes.Text
+    Close.BackgroundTransparency = 1
+    Close.TextSize = 30
+    Close.MouseButton1Click:Connect(function() self.Gui:Destroy() end)
+
+    local Input = Instance.new("TextBox", KeyMain)
+    Input.Size = UDim2.new(0.85, 0, 0, 45)
+    Input.Position = UDim2.new(0.075, 0, 0.35, 0)
+    Input.PlaceholderText = "Paste Key Here..."
+    Input.BackgroundColor3 = Themes.Sidebar
+    Input.TextColor3 = Color3.new(1,1,1)
+    Instance.new("UICorner", Input)
+
+    local Verify = Instance.new("TextButton", KeyMain)
+    Verify.Size = UDim2.new(0.85, 0, 0, 45)
+    Verify.Position = UDim2.new(0.075, 0, 0.65, 0)
+    Verify.BackgroundColor3 = Themes.Accent
+    Verify.Text = "Authenticate"
+    Verify.Font = Enum.Font.GothamBold
+    Instance.new("UICorner", Verify)
+
+    Verify.MouseButton1Click:Connect(function()
+        if Input.Text == cfg.Key then
+            KeyMain:Destroy()
+            self.Main.Visible = true
+            cfg.OnKeyVerified()
+        else
+            Verify.Text = "Access Denied"
+            task.wait(1)
+            Verify.Text = "Authenticate"
+        end
+    end)
+end
+
+-- [[ PAGE / TAB HANDLER ]]
+function Toba:CreateTab(data)
+    local Tab = {}
+    local Page = Instance.new("ScrollingFrame", self.PageContainer)
+    Page.Size = UDim2.new(1, 0, 1, 0)
+    Page.Visible = false
+    Page.BackgroundTransparency = 1
+    Page.ScrollBarThickness = 0
+    Instance.new("UIListLayout", Page).Padding = UDim.new(0, 10)
+
+    local TabBtn = Instance.new("TextButton", self.TabList)
+    TabBtn.Size = UDim2.new(0.9, 0, 0, 40)
+    TabBtn.BackgroundColor3 = Themes.Sidebar
+    TabBtn.Text = data.Title
+    TabBtn.TextColor3 = Themes.SecondaryText
+    TabBtn.Font = Enum.Font.Gotham
+    Instance.new("UICorner", TabBtn)
+
+    TabBtn.MouseButton1Click:Connect(function()
+        for _, v in pairs(self.PageContainer:GetChildren()) do v.Visible = false end
+        for _, v in pairs(self.TabList:GetChildren()) do
+            if v:IsA("TextButton") then Tween(v, 0.3, {TextColor3 = Themes.SecondaryText}) end
+        end
+        Page.Visible = true
+        Tween(TabBtn, 0.3, {TextColor3 = Themes.Accent})
+    end)
+
+    -- [[ SECTION ]]
+    function Tab:Section(text)
+        local Sec = Instance.new("TextLabel", Page)
+        Sec.Size = UDim2.new(1, 0, 0, 25)
+        Sec.Text = text:upper()
+        Sec.TextColor3 = Themes.Accent
+        Sec.Font = Enum.Font.GothamBold
+        Sec.TextSize = 12
+        Sec.BackgroundTransparency = 1
+        Sec.TextXAlignment = Enum.TextXAlignment.Left
+    end
+
+    -- [[ PARAGRAPH ]]
+    function Tab:Paragraph(data)
+        local Bg = Instance.new("Frame", Page)
+        Bg.Size = UDim2.new(1, -5, 0, 65)
+        Bg.BackgroundColor3 = Themes.Element
+        Instance.new("UICorner", Bg)
+        local t = Instance.new("TextLabel", Bg)
+        t.Size = UDim2.new(1, -20, 1, -10)
+        t.Position = UDim2.new(0, 10, 0, 5)
+        t.Text = "<b>" .. data.Title .. "</b>\n" .. data.Content
+        t.RichText = true
+        t.TextColor3 = Themes.SecondaryText
+        t.TextWrapped = true
+        t.BackgroundTransparency = 1
+        t.TextXAlignment = Enum.TextXAlignment.Left
+    end
+
+    -- [[ TOGGLE ]]
+    function Tab:Toggle(data)
+        local Bg = Instance.new("TextButton", Page)
+        Bg.Size = UDim2.new(1, -5, 0, 42)
+        Bg.BackgroundColor3 = Themes.Element
+        Bg.Text = "  " .. data.Title
+        Bg.TextColor3 = Themes.Text
+        Bg.TextXAlignment = Enum.TextXAlignment.Left
+        Instance.new("UICorner", Bg)
+
+        local Tgl = Instance.new("Frame", Bg)
+        Tgl.Size = UDim2.new(0, 36, 0, 20)
+        Tgl.Position = UDim2.new(1, -48, 0.5, -10)
+        Tgl.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+        Instance.new("UICorner", Tgl).CornerRadius = UDim.new(1, 0)
+
+        local Dot = Instance.new("Frame", Tgl)
+        Dot.Size = UDim2.new(0, 16, 0, 16)
+        Dot.Position = UDim2.new(0, 2, 0.5, -8)
+        Dot.BackgroundColor3 = Color3.new(1,1,1)
+        Instance.new("UICorner", Dot).CornerRadius = UDim.new(1, 0)
+
+        local active = false
+        Bg.MouseButton1Click:Connect(function()
+            active = not active
+            Tween(Tgl, 0.3, {BackgroundColor3 = active and Themes.Accent or Color3.fromRGB(45, 45, 55)})
+            Tween(Dot, 0.3, {Position = active and UDim2.new(1, -18, 0.5, -8) or UDim2.new(0, 2, 0.5, -8)})
+            data.Callback(active)
+        end)
+    end
+
+    -- [[ SLIDER WITH • ANIMATION ]]
+    function Tab:Slider(data)
+        local Bg = Instance.new("Frame", Page)
+        Bg.Size = UDim2.new(1, -5, 0, 55)
+        Bg.BackgroundColor3 = Themes.Element
+        Instance.new("UICorner", Bg)
+
+        local T = Instance.new("TextLabel", Bg)
+        T.Size = UDim2.new(1, -15, 0, 30)
+        T.Position = UDim2.new(0, 12, 0, 2)
+        T.Text = data.Title
+        T.TextColor3 = Themes.Text
+        T.BackgroundTransparency = 1
+        T.TextXAlignment = Enum.TextXAlignment.Left
+
+        local Bar = Instance.new("Frame", Bg)
+        Bar.Size = UDim2.new(0.9, 0, 0, 4)
+        Bar.Position = UDim2.new(0.05, 0, 0.8, 0)
+        Bar.BackgroundColor3 = Themes.Sidebar
+
+        local Fill = Instance.new("Frame", Bar)
+        Fill.Size = UDim2.new((data.Default - data.Min)/(data.Max - data.Min), 0, 1, 0)
+        Fill.BackgroundColor3 = Themes.Accent
+
+        local Thumb = Instance.new("Frame", Fill)
+        Thumb.Size = UDim2.new(0, 12, 0, 12)
+        Thumb.Position = UDim2.new(1, -6, 0.5, -6)
+        Thumb.BackgroundColor3 = Color3.new(1,1,1) -- This is the •
+        Instance.new("UICorner", Thumb).CornerRadius = UDim.new(1, 0)
+
+        local function Update(input)
+            local percent = math.clamp((input.Position.X - Bar.AbsolutePosition.X) / Bar.AbsoluteSize.X, 0, 1)
+            local value = math.floor(data.Min + (data.Max - data.Min) * percent)
+            Tween(Fill, 0.1, {Size = UDim2.new(percent, 0, 1, 0)})
+            data.Callback(value)
+        end
+
+        local dragging = false
+        Bar.InputBegan:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = true Update(i) end end)
+        UserInputService.InputEnded:Connect(function(i) if i.UserInputType == Enum.UserInputType.MouseButton1 then dragging = false end end)
+        UserInputService.InputChanged:Connect(function(i) if dragging and i.UserInputType == Enum.UserInputType.MouseMovement then Update(i) end end)
+    end
+
+    return Tab
+end
+
+return Toba
+

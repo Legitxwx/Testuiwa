@@ -1,0 +1,24 @@
+local Toba = loadstring(game:HttpGet("https://raw.githubusercontent.com/Legitxwx/Testuiwa/refs/heads/main/Wawawewa"))()
+local Window = Toba:CreateWindow({
+    Name = "Toba Hub",
+    ThemeColor = Color3.fromRGB(255, 85, 85) -- Red Theme
+})
+
+local MainTab = Window:CreateTab("Main")
+local PlayerTab = Window:CreateTab("Player")
+
+-- Add Button
+MainTab:CreateButton("Print Hello", function()
+    print("Hello from Toba UI!")
+end)
+
+-- Add Toggle
+MainTab:CreateToggle("Auto Farm", function(state)
+    print("Auto Farm is now:", state)
+end)
+
+-- Add Slider
+PlayerTab:CreateSlider("WalkSpeed", 16, 100, function(value)
+    game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = value
+end)
+
